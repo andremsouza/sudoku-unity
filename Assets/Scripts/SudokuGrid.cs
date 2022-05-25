@@ -44,12 +44,8 @@ public class SudokuGrid : MonoBehaviour
         {
             for (int j = 0; j < _rows; j++)
             {
-                // GameObject gridSquare = Instantiate(gridSquare);
-                // gridSquare.transform.parent = transform;
-                // _gridSquares.Add(gridSquare);
                 _gridSquares.Add(Instantiate(GridSquare) as GameObject);
-                _gridSquares[_gridSquares.Count - 1].transform.SetParent(transform);
-                // _gridSquares[_gridSquares.Count - 1].transform.parent = transform; // instantiate this game object as a child of the grid
+                _gridSquares[_gridSquares.Count - 1].transform.SetParent(this.transform); // instantiate this game object as a child of the grid
                 _gridSquares[_gridSquares.Count - 1].transform.localScale = new Vector3(SquareScale, SquareScale, SquareScale);
             }
         }
