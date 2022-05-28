@@ -10,7 +10,7 @@ public class GridSquare : Selectable
     public GameObject NumberText;
     private int _number = 0;
     // Start is called before the first frame update
-    void Start()
+    new void Start()
     {
         base.Start();
         if (NumberText.GetComponent<TextMeshProUGUI>() == null)

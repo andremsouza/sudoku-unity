@@ -4,27 +4,83 @@ using UnityEngine;
 
 public class SudokuDataGenerator : MonoBehaviour
 {
-    public static List<SudokuData.SudokuBoardData> GenerateSudokuData(int size, string difficulty)
+    private static bool CheckValid(in List<int> board, in int size)
+    {
+        return false;
+    }
+
+    private static bool CheckPossible(in List<int> board, in int size, in int idx, in int number)
+    {
+        int len = size * size, row = idx / size, col = idx % size;
+        // Check row
+        for (int i = 0; i < len; i++)
+        {
+            if (board[i] == number)
+                return false;
+        }
+        return true;
+    }
+
+    public static List<SudokuData.SudokuBoardData> GenerateSudokuData(in int size, in string difficulty)
     {
         List<SudokuData.SudokuBoardData> sudokuData = new List<SudokuData.SudokuBoardData>();
         SudokuData.SudokuBoardData data = new SudokuData.SudokuBoardData();
-        (data.board, data.solution) = GenerateSudokuBoard(size);
+        (data.board, data.solution) = GenerateSudokuBoard(size, difficulty);
         sudokuData.Add(data);
         return sudokuData;
     }
 
-    public static (List<int>, List<int>) GenerateSudokuBoard(int size)
+    public static (List<int>, List<int>) GenerateSudokuBoard(in int size, in string difficulty)
     {
+        int len = size * size, idx = 0, val = Random.Range(1, len);
+        Stack<(int, int)> stack = new Stack<(int, int)>();
         List<int> board = new List<int>(), solution = new List<int>();
-        for (int i = 0; i < size * size; i++)
+        List<HashSet<int>> visited = new List<HashSet<int>>();
+
+        // Initialize collections
+        for (var i = 0; i < len * len; i++)
         {
-            for (int j = 0; j < size * size; j++)
+            board.Add(0);
+            solution.Add(0);
+            visited.Add(new HashSet<int>());
+        }
+
+        // Push initial state to stack and start backtracking
+        stack.Push((idx, val));
+        while (stack.Count > 0)
+        {
+            // Get top of stack
+            (idx, val) = stack.Pop();
+
+            // If already visited, move on
+            if (visited[idx].Contains(val))
+                continue;
+
+            // Move to next state and increase index
+            visited[idx].Add(val);
+            board[idx] = val;
+            solution[idx] = val;
+            idx++;
+
+            // Check for solution (exit condition)
+            if (idx == len * len)
+                break;
+
+            // Push next possible states into stack
+            var nextStates = new HashSet<int>(visited[idx]);
+            while (nextStates.Count < len)
             {
-                board.Add(i + j);
-                solution.Add(j);
-                // board[i * size + j] = 0;
+                val = Random.Range(1, len);
+                if (!nextStates.Contains(val) && CheckPossible(board, size, idx, val))
+                {
+                    nextStates.Add(val);
+                    stack.Push((idx, val));
+                }
             }
         }
+
+        // board[i * len + j] = i + j;
+        // board[i * size + j] = 0;
         return (board, solution);
     }
 }
