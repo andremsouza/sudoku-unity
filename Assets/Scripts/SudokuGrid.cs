@@ -77,7 +77,7 @@ public class SudokuGrid : MonoBehaviour
 
     private void SetGridNumbers(string level)
     {
-        _selectedGridData = Random.Range(0, SudokuData.Instance.SudokuGame[level].Count);
+        _selectedGridData = Random.Range(0, SudokuData.Instance.SudokuGame[level].Count - 1);
         var data = SudokuData.Instance.SudokuGame[level][_selectedGridData];
 
         SetGridSquareData(data);

@@ -1,28 +1,80 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using static System.DateTime;
+using static System.Int32;
 
 public class SudokuDataGenerator : MonoBehaviour
 {
     private const float _easyPercentage = 0.84f, _mediumPercentage = 0.63f, _hardPercentage = 0.42f, _veryHardPercentage = 0.21f;
 
 
-    private static bool CheckValid(in List<int> board, in int size)
+    private static List<int> GenerateRandomStates(in int size, int randomState = -1)
     {
-        return false;
+        if (randomState == -1)
+        {
+            var dateTime = System.DateTime.Now;
+            randomState = (int)dateTime.TimeOfDay.TotalMilliseconds;
+        }
+        Random.InitState(randomState);
+        var len = size * size;
+        // Push next possible states into stack
+        var nextStates = new List<int>();
+        // Add numbers to list of next states
+        for (int i = 1; i <= len; i++)
+            nextStates.Add(i);
+        // Shuffle list of next states
+        for (int i = 0; i < nextStates.Count; i++)
+        {
+            var temp = nextStates[i];
+            var randomIndex = Random.Range(0, nextStates.Count - 1);
+            nextStates[i] = nextStates[randomIndex];
+            nextStates[randomIndex] = temp;
+        }
+        return nextStates;
     }
 
-    private static bool CheckPossible(in List<int> board, in int size, in int idx, in int number)
+
+    private static bool CheckValid(in List<int> board, in int size)
     {
-        int len = size * size, row = idx / size, col = idx % size;
-        // Check row
+        var len = size * size;
+
         for (int i = 0; i < len; i++)
         {
-            if (board[i] == number)
-                return false;
+            for (int j = 0; j < len; j++)
+            {
+                if (!CheckPossible(board, size, i * len + j, board[i * len + j]))
+                    return false;
+            }
         }
         return true;
     }
+
+
+    private static bool CheckPossible(in List<int> board, in int size, in int idx, in int number)
+    {
+        var len = size * size;
+        int row = idx / len, col = idx % len;
+        // Check row
+        for (int j = 0; j < len; j++)
+            if (row * len + j != idx && board[row * len + j] == number)
+                return false;
+        // Check column
+        for (int i = 0; i < len; i++)
+            if (i * len + col != idx && board[i * len + col] == number)
+                return false;
+        // Check square
+        for (int i = size * (int)(row / size); i < size * ((int)(row / size) + 1); i++)
+        {
+            for (int j = size * (int)(col / size); j < size * ((int)(col / size) + 1); j++)
+            {
+                if (i * len + j != idx && board[i * len + j] == number)
+                    return false;
+            }
+        }
+        return true;
+    }
+
 
     public static List<SudokuData.SudokuBoardData> GenerateSudokuData(in int size, in string difficulty)
     {
@@ -33,12 +85,14 @@ public class SudokuDataGenerator : MonoBehaviour
         return sudokuData;
     }
 
+
     public static (List<int>, List<int>) GenerateSudokuBoard(in int size, in string difficulty)
     {
-        int len = size * size, idx = 0, val = Random.Range(1, len);
+        int len = size * size, lastIdx = 0, maxIdx = 0;
         Stack<(int, int)> stack = new Stack<(int, int)>();
         List<int> board = new List<int>(), solution = new List<int>();
         List<HashSet<int>> visited = new List<HashSet<int>>();
+
 
         // Initialize collections
         for (var i = 0; i < len * len; i++)
@@ -48,79 +102,92 @@ public class SudokuDataGenerator : MonoBehaviour
             visited.Add(new HashSet<int>());
         }
 
+        // First stage: Generate full board
+
+        // Set Random Initial States
+        System.DateTime dateTime = System.DateTime.Now;
+        Random.InitState((int)dateTime.TimeOfDay.TotalMilliseconds);
         // Push initial state to stack and start backtracking
-        stack.Push((idx, val));
+        var nextStates = GenerateRandomStates(size, Random.Range(0, int.MaxValue));
+        foreach (var state in nextStates)
+            stack.Push((0, state));
+        // While stack is not empty, search for solution
         while (stack.Count > 0)
         {
-            // Get top of stack
-            (idx, val) = stack.Pop();
-
-            // If already visited, move on
-            if (visited[idx].Contains(val))
-                continue;
-
-            // Move to next state and increase index
-            visited[idx].Add(val);
-            board[idx] = val;
-            solution[idx] = val;
-            idx++;
-
-            // Check for solution (exit condition)
-            if (idx == len * len)
-                break;
-
-            // Push next possible states into stack
-            var nextStates = new HashSet<int>(visited[idx]);
-            while (nextStates.Count < len)
+            // Get top of stack and check if visited
+            var (idx, val) = stack.Pop();
+            if (!visited[idx].Contains(val))
             {
-                val = Random.Range(1, len);
-                if (!nextStates.Contains(val) && CheckPossible(board, size, idx, val))
+                // If not visited, mark as visited and "make a move"
+                visited[idx].Add(val);
+                board[idx] = val;
+                solution[idx] = val;
+
+                // Check for solution (exit condition)
+                if (idx == len * len - 1)
+                    break;
+
+                // Clear visited sets from idx + 1 to lastIdx
+                // Used to clear visited sets for backtracking
+                for (var i = idx + 1; i <= lastIdx; i++)
                 {
-                    nextStates.Add(val);
-                    stack.Push((idx, val));
+                    visited[i].Clear();
+                    solution[i] = board[i] = 0;
+                }
+                lastIdx = idx;
+                maxIdx = idx > maxIdx ? idx : maxIdx;
+            }
+            // Get all adjacent vertices of current vertex
+            // If an adjacent vertex is not visited, push it to stack
+            nextStates = GenerateRandomStates(size, Random.Range(0, int.MaxValue));
+            foreach (var state in nextStates)
+            {
+                if (!visited[idx + 1].Contains(state) && CheckPossible(board, size, idx + 1, state))
+                {
+                    stack.Push((idx + 1, state));
                 }
             }
         }
 
-        // board[i * len + j] = i + j;
-        // board[i * size + j] = 0;
+        // Second stage: remove random numbers from board while ensuring only one solution
+
         return (board, solution);
     }
 }
 
 public class SudokuEasyData : MonoBehaviour
 {
-    public static List<SudokuData.SudokuBoardData> GetData()
-    {
-        List<SudokuData.SudokuBoardData> data = new List<SudokuData.SudokuBoardData>();
+    // public static List<SudokuData.SudokuBoardData> GetData()
+    // {
+    //     List<SudokuData.SudokuBoardData> data = new List<SudokuData.SudokuBoardData>();
 
-        data.Add(new SudokuData.SudokuBoardData(
-            new List<int>(81) {
-                0, 1, 4, 0, 0, 0, 0, 3, 0,
-                3, 0, 0, 5, 1, 0, 8, 0, 0,
-                0, 8, 0, 0, 0, 9, 0, 0, 6,
-                0, 0, 1, 8, 0, 0, 6, 0, 0,
-                0, 0, 3, 2, 5, 6, 4, 0, 0,
-                0, 0, 6, 0, 0, 7, 2, 0, 0,
-                9, 0, 0, 7, 0, 0, 0, 4, 0,
-                0, 0, 5, 0, 8, 4, 0, 0, 2,
-                0, 4, 0, 0, 0, 0, 7, 1, 0
-            },
-            new List<int>(81) {
-                0, 1, 4, 0, 0, 0, 0, 3, 0,
-                3, 0, 0, 5, 1, 0, 8, 0, 0,
-                0, 8, 0, 0, 0, 9, 0, 0, 6,
-                0, 0, 1, 8, 0, 0, 6, 0, 0,
-                0, 0, 3, 2, 5, 6, 4, 0, 0,
-                0, 0, 6, 0, 0, 7, 2, 0, 0,
-                9, 0, 0, 7, 0, 0, 0, 4, 0,
-                0, 0, 5, 0, 8, 4, 0, 0, 2,
-                0, 4, 0, 0, 0, 0, 7, 1, 0
-            }
-        ));
+    //     data.Add(new SudokuData.SudokuBoardData(
+    //         new List<int>(81) {
+    //             0, 1, 4, 0, 0, 0, 0, 3, 0,
+    //             3, 0, 0, 5, 1, 0, 8, 0, 0,
+    //             0, 8, 0, 0, 0, 9, 0, 0, 6,
+    //             0, 0, 1, 8, 0, 0, 6, 0, 0,
+    //             0, 0, 3, 2, 5, 6, 4, 0, 0,
+    //             0, 0, 6, 0, 0, 7, 2, 0, 0,
+    //             9, 0, 0, 7, 0, 0, 0, 4, 0,
+    //             0, 0, 5, 0, 8, 4, 0, 0, 2,
+    //             0, 4, 0, 0, 0, 0, 7, 1, 0
+    //         },
+    //         new List<int>(81) {
+    //             0, 1, 4, 0, 0, 0, 0, 3, 0,
+    //             3, 0, 0, 5, 1, 0, 8, 0, 0,
+    //             0, 8, 0, 0, 0, 9, 0, 0, 6,
+    //             0, 0, 1, 8, 0, 0, 6, 0, 0,
+    //             0, 0, 3, 2, 5, 6, 4, 0, 0,
+    //             0, 0, 6, 0, 0, 7, 2, 0, 0,
+    //             9, 0, 0, 7, 0, 0, 0, 4, 0,
+    //             0, 0, 5, 0, 8, 4, 0, 0, 2,
+    //             0, 4, 0, 0, 0, 0, 7, 1, 0
+    //         }
+    //     ));
 
-        return data;
-    }
+    //     return data;
+    // }
 
     public static List<SudokuData.SudokuBoardData> GetData(int size, string difficulty)
     {
@@ -265,9 +332,9 @@ public class SudokuData : MonoBehaviour
     void Start()
     {
         SudokuGame.Add("Easy", SudokuEasyData.GetData(3, "Easy"));
-        SudokuGame.Add("Medium", SudokuMediumData.GetData());
-        SudokuGame.Add("Hard", SudokuHardData.GetData());
-        SudokuGame.Add("VeryHard", SudokuVeryHardData.GetData());
+        // SudokuGame.Add("Medium", SudokuMediumData.GetData());
+        // SudokuGame.Add("Hard", SudokuHardData.GetData());
+        // SudokuGame.Add("VeryHard", SudokuVeryHardData.GetData());
     }
 
     // Update is called once per frame
