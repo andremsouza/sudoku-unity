@@ -86,7 +86,7 @@ public class SudokuDataGenerator : MonoBehaviour
     }
 
 
-    public static (List<int>, List<int>) GenerateSudokuBoard(in int size, in string difficulty)
+    public static (List<int>, List<int>) GenerateSudokuBoard(in int size, in string difficulty, int randomState = -1)
     {
         int len = size * size, lastIdx = 0, maxIdx = 0;
         Stack<(int, int)> stack = new Stack<(int, int)>();
@@ -105,8 +105,15 @@ public class SudokuDataGenerator : MonoBehaviour
         // First stage: Generate full board
 
         // Set Random Initial States
-        System.DateTime dateTime = System.DateTime.Now;
-        Random.InitState((int)dateTime.TimeOfDay.TotalMilliseconds);
+        if (randomState == -1)
+        {
+            System.DateTime dateTime = System.DateTime.Now;
+            Random.InitState((int)dateTime.TimeOfDay.TotalMilliseconds);
+        }
+        else
+        {
+            Random.InitState(randomState);
+        }
         // Push initial state to stack and start backtracking
         var nextStates = GenerateRandomStates(size, Random.Range(0, int.MaxValue));
         foreach (var state in nextStates)
