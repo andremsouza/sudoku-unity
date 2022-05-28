@@ -9,32 +9,6 @@ public class SudokuDataGenerator : MonoBehaviour
     private const float _easyPercentage = 0.84f, _mediumPercentage = 0.63f, _hardPercentage = 0.42f, _veryHardPercentage = 0.21f;
 
 
-    private static List<int> GenerateRandomStates(in int size, int randomState = -1)
-    {
-        if (randomState == -1)
-        {
-            var dateTime = System.DateTime.Now;
-            randomState = (int)dateTime.TimeOfDay.TotalMilliseconds;
-        }
-        Random.InitState(randomState);
-        var len = size * size;
-        // Push next possible states into stack
-        var nextStates = new List<int>();
-        // Add numbers to list of next states
-        for (int i = 1; i <= len; i++)
-            nextStates.Add(i);
-        // Shuffle list of next states
-        for (int i = 0; i < nextStates.Count; i++)
-        {
-            var temp = nextStates[i];
-            var randomIndex = Random.Range(0, nextStates.Count - 1);
-            nextStates[i] = nextStates[randomIndex];
-            nextStates[randomIndex] = temp;
-        }
-        return nextStates;
-    }
-
-
     private static bool CheckValid(in List<int> board, in int size)
     {
         var len = size * size;
@@ -76,13 +50,29 @@ public class SudokuDataGenerator : MonoBehaviour
     }
 
 
-    public static List<SudokuData.SudokuBoardData> GenerateSudokuData(in int size, in string difficulty)
+    private static List<int> GenerateRandomStates(in int size, int randomState = -1)
     {
-        List<SudokuData.SudokuBoardData> sudokuData = new List<SudokuData.SudokuBoardData>();
-        SudokuData.SudokuBoardData data = new SudokuData.SudokuBoardData();
-        (data.board, data.solution) = GenerateSudokuBoard(size, difficulty);
-        sudokuData.Add(data);
-        return sudokuData;
+        if (randomState == -1)
+        {
+            var dateTime = System.DateTime.Now;
+            randomState = (int)dateTime.TimeOfDay.TotalMilliseconds;
+        }
+        Random.InitState(randomState);
+        var len = size * size;
+        // Push next possible states into stack
+        var nextStates = new List<int>();
+        // Add numbers to list of next states
+        for (int i = 1; i <= len; i++)
+            nextStates.Add(i);
+        // Shuffle list of next states
+        for (int i = 0; i < nextStates.Count; i++)
+        {
+            var temp = nextStates[i];
+            var randomIndex = Random.Range(0, nextStates.Count - 1);
+            nextStates[i] = nextStates[randomIndex];
+            nextStates[randomIndex] = temp;
+        }
+        return nextStates;
     }
 
 
@@ -159,6 +149,16 @@ public class SudokuDataGenerator : MonoBehaviour
         // Second stage: remove random numbers from board while ensuring only one solution
 
         return (board, solution);
+    }
+
+
+    public static List<SudokuData.SudokuBoardData> GenerateSudokuData(in int size, in string difficulty)
+    {
+        List<SudokuData.SudokuBoardData> sudokuData = new List<SudokuData.SudokuBoardData>();
+        SudokuData.SudokuBoardData data = new SudokuData.SudokuBoardData();
+        (data.board, data.solution) = GenerateSudokuBoard(size, difficulty);
+        sudokuData.Add(data);
+        return sudokuData;
     }
 }
 
