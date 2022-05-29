@@ -173,9 +173,10 @@ public class SudokuDataGenerator : MonoBehaviour
 
     private static List<int> RemoveRandomValues(in List<int> solution, in int size, in float removePercentage, int randomState = -1)
     {
-        int len = size * size, removedValues = 0, removeCount = (int)(removePercentage * solution.Count);
+        int len = size * size, removedValues = 0, removeCount = (int)(removePercentage * solution.Count), remainingAttempts = 1000;
         List<int> board = new List<int>(solution);
-        Stack<int> removed = new Stack<int>();
+        List<int> filledCells = new List<int>();
+        HashSet<int> filledCellsSet = new HashSet<int>(), removedCells = new HashSet<int>();
 
         // Set Random Initial States
         if (randomState == -1)
@@ -185,33 +186,50 @@ public class SudokuDataGenerator : MonoBehaviour
         }
         Random.InitState(randomState);
 
-        // Second stage: remove random numbers from board while ensuring only one solution
-        while (removedValues < removeCount)
-        {
-            var removeIdx = Random.Range(0, board.Count - 1);
-
-            if (!removed.Contains(removeIdx))
+        // Set filledCells
+        for (int i = 0; i < len * len; i++)
+            if (board[i] != 0)
             {
+                filledCells.Add(i);
+                filledCellsSet.Add(i);
+            }
+
+        // Second stage: remove random numbers from board while ensuring only one solution
+        while (removedValues < removeCount && remainingAttempts-- > 0)
+        {
+            var filledCellsIdx = Random.Range(0, filledCells.Count - 1);
+            var removeIdx = filledCells[filledCellsIdx];
+
+            if (!removedCells.Contains(removeIdx))
+            {
+                var tmpVal = board[removeIdx];
                 board[removeIdx] = 0;
-                removed.Push(removeIdx);
+                filledCells.RemoveAt(filledCellsIdx);
+                filledCellsSet.Remove(removeIdx);
+                removedCells.Add(removeIdx);
 
                 var (solutionCount, tmp) = SolveBoard(board, size, randomState);
                 if (solutionCount == 1)
                     removedValues++;
                 else
-                    board[removeIdx] = removed.Pop();
+                {
+                    board[removeIdx] = tmpVal;
+                    filledCells.Add(removeIdx);
+                    filledCellsSet.Add(removeIdx);
+                    removedCells.Remove(removeIdx);
+                }
             }
         }
         return board;
     }
 
 
-    private static (int, List<int>) SolveBoard(List<int> board, in int size, int randomState = -1)
+    private static (int, List<int>) SolveBoard(in List<int> board, in int size, int randomState = -1)
     {
         int solutionCount = 0, len = size * size;
-        Stack<(int, int)> stack = new Stack<(int, int)>(), unvisit = new Stack<(int, int)>();
+        Stack<(List<int>, HashSet<int>)> stack = new Stack<(List<int>, HashSet<int>)>();
         List<int> solution = new List<int>(board);
-        List<HashSet<int>> visited = new List<HashSet<int>>();
+        HashSet<string> visited = new HashSet<string>();
         HashSet<int> emptyCells = new HashSet<int>();
 
         // Set Random Initial States
@@ -225,7 +243,6 @@ public class SudokuDataGenerator : MonoBehaviour
         // Initialize collections
         for (var i = 0; i < solution.Count; i++)
         {
-            visited.Add(new HashSet<int>());
             // Find empty cells
             if (solution[i] == 0)
                 emptyCells.Add(i);
@@ -237,23 +254,29 @@ public class SudokuDataGenerator : MonoBehaviour
         {
             var nextStates = GenerateRandomStates(size, randomState);
             foreach (var state in nextStates)
-                if (!visited[idx].Contains(state) && CheckPossible(board, size, idx, state))
-                    stack.Push((idx, state));
+                if (CheckPossible(solution, size, idx, state))
+                {
+                    var tmpBoard = new List<int>(solution);
+                    var tmpEmptyCells = new HashSet<int>(emptyCells);
+                    tmpBoard[idx] = state;
+                    tmpEmptyCells.Remove(idx);
+                    stack.Push((tmpBoard, tmpEmptyCells));
+                }
         }
+
         // While stack is not empty, search for solution
         while (stack.Count > 0)
         {
             // Get top of stack and check if visited
-            var (idx, val) = stack.Pop();
-            if (!visited[idx].Contains(val))
+            var (currentState, currentEmptyCells) = stack.Pop();
+            if (!visited.Contains(string.Concat(currentState.ToArray())))
             {
                 // If not visited, mark as visited and "make a move"
-                visited[idx].Add(val);
-                board[idx] = val;
-                emptyCells.Remove(idx);
+                visited.Add(string.Concat(currentState.ToArray()));
                 // Check for solution (exit condition)
-                if (CheckValidBoard(solution, size, true))
+                if (currentEmptyCells.Count == 0 && CheckValidBoard(currentState, size, true))
                 {
+                    solution = currentState;
                     solutionCount++;
                     // We're only interested in cases with:
                     //  "no solution" -> solutionCount == 0,
@@ -263,21 +286,24 @@ public class SudokuDataGenerator : MonoBehaviour
                         break;
                 }
             }
-            else
-            {
-                // backtrack
-                board[idx] = 0;
-                emptyCells.Add(idx);
-            }
 
             // Get all adjacent vertices of current vertex
             // If an adjacent vertex is not visited, push it to stack
-            foreach (var emptyIdx in emptyCells)
+            foreach (var idx in currentEmptyCells)
             {
                 var nextStates = GenerateRandomStates(size, randomState);
                 foreach (var state in nextStates)
-                    if (!visited[emptyIdx].Contains(state) && CheckPossible(board, size, emptyIdx, state))
-                        stack.Push((emptyIdx, state));
+                {
+                    if (CheckPossible(currentState, size, idx, state))
+                    {
+                        var tmpBoard = new List<int>(currentState);
+                        var tmpEmptyCells = new HashSet<int>(currentEmptyCells);
+                        tmpBoard[idx] = state;
+                        tmpEmptyCells.Remove(idx);
+                        if (!visited.Contains(string.Concat(tmpBoard.ToArray())))
+                            stack.Push((tmpBoard, tmpEmptyCells));
+                    }
+                }
             }
         }
 
