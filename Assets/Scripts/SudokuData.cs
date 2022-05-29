@@ -7,7 +7,7 @@ using static System.Int32;
 public class SudokuDataGenerator : MonoBehaviour
 {
 
-    private const float _easyPercentage = 0.84f, _mediumPercentage = 0.63f, _hardPercentage = 0.42f, _veryHardPercentage = 0.21f;
+    private const float _easyPercentage = 0.16f, _mediumPercentage = 0.37f, _hardPercentage = 0.58f, _veryHardPercentage = 0.79f;
 
     private static bool CheckValid(in List<int> board, in int size)
     {
@@ -93,7 +93,7 @@ public class SudokuDataGenerator : MonoBehaviour
     }
 
 
-    private static List<int> RemoveRandomValues(in List<int> board, in int size, in string difficulty, int randomState = -1)
+    private static List<int> RemoveRandomValues(in List<int> board, in int size, in float removePercentage, int randomState = -1)
     {
 
     }
@@ -180,7 +180,7 @@ public class SudokuDataGenerator : MonoBehaviour
         List<SudokuData.SudokuBoardData> sudokuData = new List<SudokuData.SudokuBoardData>();
         SudokuData.SudokuBoardData data = new SudokuData.SudokuBoardData();
         data.board = GenerateSudokuBoard(size);
-        data.solution = RemoveRandomValues(data.board, size, difficulty);
+        data.solution = RemoveRandomValues(data.board, size, GetDifficultyPercentage(difficulty));
         sudokuData.Add(data);
         return sudokuData;
     }
