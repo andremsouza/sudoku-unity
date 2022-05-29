@@ -103,7 +103,7 @@ public class SudokuDataGenerator : MonoBehaviour
     {
         int len = size * size, lastIdx = 0, maxIdx = 0;
         Stack<(int, int)> stack = new Stack<(int, int)>();
-        List<int> board = new List<int>(), solution = new List<int>();
+        List<int> board = new List<int>();
         List<HashSet<int>> visited = new List<HashSet<int>>();
 
 
@@ -111,7 +111,6 @@ public class SudokuDataGenerator : MonoBehaviour
         for (var i = 0; i < len * len; i++)
         {
             board.Add(0);
-            solution.Add(0);
             visited.Add(new HashSet<int>());
         }
 
@@ -141,7 +140,6 @@ public class SudokuDataGenerator : MonoBehaviour
                 // If not visited, mark as visited and "make a move"
                 visited[idx].Add(val);
                 board[idx] = val;
-                solution[idx] = val;
 
                 // Check for solution (exit condition)
                 if (idx == len * len - 1)
@@ -152,7 +150,7 @@ public class SudokuDataGenerator : MonoBehaviour
                 for (var i = idx + 1; i <= lastIdx; i++)
                 {
                     visited[i].Clear();
-                    solution[i] = board[i] = 0;
+                    board[i] = 0;
                 }
                 lastIdx = idx;
                 maxIdx = idx > maxIdx ? idx : maxIdx;
@@ -171,7 +169,7 @@ public class SudokuDataGenerator : MonoBehaviour
 
         // Second stage: remove random numbers from board while ensuring only one solution
 
-        return (board, solution);
+        return board;
     }
 
 
