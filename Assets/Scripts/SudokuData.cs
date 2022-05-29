@@ -83,7 +83,13 @@ public class SudokuDataGenerator : MonoBehaviour
     }
 
 
-    public static (List<int>, List<int>) GenerateSudokuBoard(in int size, in string difficulty, int randomState = -1)
+    private static List<int> RemoveRandomValues(in List<int> board, in int size, in string difficulty, int randomState = -1)
+    {
+
+    }
+
+
+    private static (List<int>, List<int>) GenerateSudokuBoard(in int size, int randomState = -1)
     {
         int len = size * size, lastIdx = 0, maxIdx = 0;
         Stack<(int, int)> stack = new Stack<(int, int)>();
@@ -163,7 +169,8 @@ public class SudokuDataGenerator : MonoBehaviour
     {
         List<SudokuData.SudokuBoardData> sudokuData = new List<SudokuData.SudokuBoardData>();
         SudokuData.SudokuBoardData data = new SudokuData.SudokuBoardData();
-        (data.board, data.solution) = GenerateSudokuBoard(size, difficulty);
+        data.board = GenerateSudokuBoard(size);
+        data.solution = RemoveRandomValues(data.board, size, difficulty);
         sudokuData.Add(data);
         return sudokuData;
     }
