@@ -173,12 +173,18 @@ public class SudokuDataGenerator : MonoBehaviour
     }
 
 
-    public static List<SudokuData.SudokuBoardData> GenerateSudokuData(in int size, in string difficulty)
+    public static List<SudokuData.SudokuBoardData> GenerateSudokuData(in int size, in string difficulty, int randomState = -1)
     {
         List<SudokuData.SudokuBoardData> sudokuData = new List<SudokuData.SudokuBoardData>();
         SudokuData.SudokuBoardData data = new SudokuData.SudokuBoardData();
-        data.board = GenerateSudokuBoard(size);
-        data.solution = RemoveRandomValues(data.board, size, GetDifficultyPercentage(difficulty));
+
+        if (randomState == -1)
+        {
+            System.DateTime dateTime = System.DateTime.Now;
+            randomState = (int)dateTime.TimeOfDay.TotalMilliseconds;
+        }
+        data.board = GenerateSudokuBoard(size, randomState);
+        data.solution = RemoveRandomValues(data.board, size, GetDifficultyPercentage(difficulty), randomState);
         sudokuData.Add(data);
         return sudokuData;
     }
