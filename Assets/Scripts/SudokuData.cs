@@ -169,20 +169,82 @@ public class SudokuDataGenerator : MonoBehaviour
     }
 
 
-    public static List<SudokuData.SudokuBoardData> GenerateSudokuData(in int size, in string difficulty, int randomState = -1)
+    private static (int, List<int>) SolveBoard(List<int> board, in int size, int randomState = -1)
     {
-        List<SudokuData.SudokuBoardData> sudokuData = new List<SudokuData.SudokuBoardData>();
-        SudokuData.SudokuBoardData data = new SudokuData.SudokuBoardData();
+        int solutionCount = 0, len = size * size;
+        Stack<(int, int)> stack = new Stack<(int, int)>(), unvisit = new Stack<(int, int)>();
+        List<int> solution = new List<int>(board);
+        List<HashSet<int>> visited = new List<HashSet<int>>();
+        HashSet<int> emptyCells = new HashSet<int>();
 
+        // Set Random Initial States
         if (randomState == -1)
         {
-            System.DateTime dateTime = System.DateTime.Now;
+            var dateTime = System.DateTime.Now;
             randomState = (int)dateTime.TimeOfDay.TotalMilliseconds;
         }
-        data.board = GenerateSudokuBoard(size, randomState);
-        data.solution = RemoveRandomValues(data.board, size, GetDifficultyPercentage(difficulty), randomState);
-        sudokuData.Add(data);
-        return sudokuData;
+        Random.InitState(randomState);
+
+        // Initialize collections
+        for (var i = 0; i < solution.Count; i++)
+        {
+            visited.Add(new HashSet<int>());
+            // Find empty cells
+            if (solution[i] == 0)
+                emptyCells.Add(i);
+        }
+
+        // Solve board
+        // Push initial state to stack and start backtracking
+        foreach (var idx in emptyCells)
+        {
+            var nextStates = GenerateRandomStates(size, randomState);
+            foreach (var state in nextStates)
+                if (!visited[idx].Contains(state) && CheckPossible(board, size, idx, state))
+                    stack.Push((idx, state));
+        }
+        // While stack is not empty, search for solution
+        while (stack.Count > 0)
+        {
+            // Get top of stack and check if visited
+            var (idx, val) = stack.Pop();
+            if (!visited[idx].Contains(val))
+            {
+                // If not visited, mark as visited and "make a move"
+                visited[idx].Add(val);
+                board[idx] = val;
+                emptyCells.Remove(idx);
+                // Check for solution (exit condition)
+                if (CheckValidBoard(solution, size, true))
+                {
+                    solutionCount++;
+                    // We're only interested in cases with:
+                    //  "no solution" -> solutionCount == 0,
+                    //  "one solution" -> solutionCount == 1, 
+                    //  "multiple solutions" -> solutionCount == 2
+                    if (solutionCount > 1)
+                        break;
+                }
+            }
+            else
+            {
+                // backtrack
+                board[idx] = 0;
+                emptyCells.Add(idx);
+            }
+
+            // Get all adjacent vertices of current vertex
+            // If an adjacent vertex is not visited, push it to stack
+            foreach (var emptyIdx in emptyCells)
+            {
+                var nextStates = GenerateRandomStates(size, randomState);
+                foreach (var state in nextStates)
+                    if (!visited[emptyIdx].Contains(state) && CheckPossible(board, size, emptyIdx, state))
+                        stack.Push((emptyIdx, state));
+            }
+        }
+
+        return (solutionCount, solution);
     }
 }
 
