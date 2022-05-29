@@ -9,7 +9,7 @@ public class SudokuDataGenerator : MonoBehaviour
 
     private const float _easyPercentage = 0.16f, _mediumPercentage = 0.37f, _hardPercentage = 0.58f, _veryHardPercentage = 0.79f;
 
-    private static bool CheckValid(in List<int> board, in int size)
+    private static bool CheckValidBoard(in List<int> board, in int size)
     {
         var len = size * size;
 
@@ -17,7 +17,7 @@ public class SudokuDataGenerator : MonoBehaviour
         {
             for (int j = 0; j < len; j++)
             {
-                if (!CheckPossible(board, size, i * len + j, board[i * len + j]))
+                if (board[i * len + j] == 0 || !CheckPossible(board, size, i * len + j, board[i * len + j]))
                     return false;
             }
         }
