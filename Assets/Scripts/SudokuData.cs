@@ -6,8 +6,14 @@ using static System.Int32;
 
 public class SudokuDataGenerator : MonoBehaviour
 {
-    private const float _easyPercentage = 0.84f, _mediumPercentage = 0.63f, _hardPercentage = 0.42f, _veryHardPercentage = 0.21f;
 
+    private const Dictionary<string, float> DifficultyLevels = new Dictionary<string, float>()
+    {
+        {"Easy", 0.84f},
+        {"Medium", 0.63f},
+        {"Hard", 0.42f},
+        {"VeryHard", 0.21f}
+    };
 
     private static bool CheckValid(in List<int> board, in int size)
     {
