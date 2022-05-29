@@ -99,7 +99,7 @@ public class SudokuDataGenerator : MonoBehaviour
     }
 
 
-    private static (List<int>, List<int>) GenerateSudokuBoard(in int size, int randomState = -1)
+    private static List<int> GenerateSudokuBoard(in int size, int randomState = -1)
     {
         int len = size * size, lastIdx = 0, maxIdx = 0;
         Stack<(int, int)> stack = new Stack<(int, int)>();
