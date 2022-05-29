@@ -165,6 +165,38 @@ public class SudokuDataGenerator : MonoBehaviour
             }
         }
 
+
+    private static List<int> RemoveRandomValues(in List<int> solution, in int size, in float removePercentage, int randomState = -1)
+    {
+        int len = size * size, removedValues = 0, removeCount = (int)(removePercentage * solution.Count);
+        List<int> board = new List<int>(solution);
+        Stack<int> removed = new Stack<int>();
+
+        // Set Random Initial States
+        if (randomState == -1)
+        {
+            var dateTime = System.DateTime.Now;
+            randomState = (int)dateTime.TimeOfDay.TotalMilliseconds;
+        }
+        Random.InitState(randomState);
+
+        // Second stage: remove random numbers from board while ensuring only one solution
+        while (removedValues < removeCount)
+        {
+            var removeIdx = Random.Range(0, board.Count - 1);
+
+            if (!removed.Contains(removeIdx))
+            {
+                board[removeIdx] = 0;
+                removed.Push(removeIdx);
+
+                var (solutionCount, tmp) = SolveBoard(board, size, randomState);
+                if (solutionCount == 1)
+                    removedValues++;
+                else
+                    board[removeIdx] = removed.Pop();
+            }
+        }
         return board;
     }
 
