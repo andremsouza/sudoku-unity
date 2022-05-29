@@ -9,19 +9,22 @@ public class SudokuDataGenerator : MonoBehaviour
     private const float _easyPercentage = 0.16f, _mediumPercentage = 0.37f, _hardPercentage = 0.58f, _veryHardPercentage = 0.79f;
 
 
-    private static bool CheckValidBoard(in List<int> board, in int size, in bool checkFull)
+    public static List<SudokuData.SudokuBoardData> GenerateSudokuData(in int size, in string difficulty, int randomState = -1)
     {
-        var len = size * size;
+        List<SudokuData.SudokuBoardData> sudokuData = new List<SudokuData.SudokuBoardData>();
+        SudokuData.SudokuBoardData data = new SudokuData.SudokuBoardData();
 
-        for (int i = 0; i < len; i++)
+        if (randomState == -1)
         {
-            for (int j = 0; j < len; j++)
-            {
-                if ((checkFull && board[i * len + j] == 0) || !CheckPossible(board, size, i * len + j, board[i * len + j]))
-                    return false;
-            }
+            var dateTime = System.DateTime.Now;
+            randomState = (int)dateTime.TimeOfDay.TotalMilliseconds;
         }
-        return true;
+        Random.InitState(randomState);
+
+        data.board = GenerateSudokuBoard(size, randomState);
+        data.solution = RemoveRandomValues(data.board, size, GetDifficultyPercentage(difficulty), randomState);
+        sudokuData.Add(data);
+        return sudokuData;
     }
 
 
@@ -39,31 +42,24 @@ public class SudokuDataGenerator : MonoBehaviour
                 return false;
         // Check square
         for (int i = size * (int)(row / size); i < size * ((int)(row / size) + 1); i++)
-        {
             for (int j = size * (int)(col / size); j < size * ((int)(col / size) + 1); j++)
-            {
                 if (i * len + j != idx && board[i * len + j] == number)
                     return false;
-            }
-        }
+
         return true;
     }
 
-    private static float GetDifficultyPercentage(in string difficulty)
+
+    private static bool CheckValidBoard(in List<int> board, in int size, in bool checkFull)
     {
-        switch (difficulty)
-        {
-            case "Easy":
-                return _easyPercentage;
-            case "Medium":
-                return _mediumPercentage;
-            case "Hard":
-                return _hardPercentage;
-            case "Very Hard":
-                return _veryHardPercentage;
-            default:
-                return 0.0f;
-        }
+        var len = size * size;
+
+        for (int i = 0; i < len; i++)
+            for (int j = 0; j < len; j++)
+                if ((checkFull && board[i * len + j] == 0) || !CheckPossible(board, size, i * len + j, board[i * len + j]))
+                    return false;
+
+        return true;
     }
 
 
@@ -93,12 +89,6 @@ public class SudokuDataGenerator : MonoBehaviour
     }
 
 
-    private static List<int> RemoveRandomValues(in List<int> board, in int size, in float removePercentage, int randomState = -1)
-    {
-
-    }
-
-
     private static List<int> GenerateSudokuBoard(in int size, int randomState = -1)
     {
         int len = size * size, lastIdx = 0, maxIdx = 0;
@@ -106,21 +96,19 @@ public class SudokuDataGenerator : MonoBehaviour
         List<int> board = new List<int>();
         List<HashSet<int>> visited = new List<HashSet<int>>();
 
+        // Set Random Initial States
+        if (randomState == -1)
+        {
+            var dateTime = System.DateTime.Now;
+            randomState = (int)dateTime.TimeOfDay.TotalMilliseconds;
+        }
+        Random.InitState(randomState);
+
         // Initialize collections
         for (var i = 0; i < len * len; i++)
         {
             board.Add(0);
             visited.Add(new HashSet<int>());
-        }
-        // Set Random Initial States
-        if (randomState == -1)
-        {
-            System.DateTime dateTime = System.DateTime.Now;
-            Random.InitState((int)dateTime.TimeOfDay.TotalMilliseconds);
-        }
-        else
-        {
-            Random.InitState(randomState);
         }
 
         // First stage: Generate full board
@@ -157,13 +145,30 @@ public class SudokuDataGenerator : MonoBehaviour
             // If an adjacent vertex is not visited, push it to stack
             nextStates = GenerateRandomStates(size, randomState);
             foreach (var state in nextStates)
-            {
                 if (!visited[idx + 1].Contains(state) && CheckPossible(board, size, idx + 1, state))
-                {
                     stack.Push((idx + 1, state));
-                }
-            }
         }
+
+        return board;
+    }
+
+
+    private static float GetDifficultyPercentage(in string difficulty)
+    {
+        switch (difficulty)
+        {
+            case "Easy":
+                return _easyPercentage;
+            case "Medium":
+                return _mediumPercentage;
+            case "Hard":
+                return _hardPercentage;
+            case "Very Hard":
+                return _veryHardPercentage;
+            default:
+                return 0.0f;
+        }
+    }
 
 
     private static List<int> RemoveRandomValues(in List<int> solution, in int size, in float removePercentage, int randomState = -1)
