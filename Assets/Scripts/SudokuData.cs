@@ -21,8 +21,8 @@ public class SudokuDataGenerator : MonoBehaviour
         }
         Random.InitState(randomState);
 
-        data.board = GenerateSudokuBoard(size, randomState);
-        data.solution = RemoveRandomValues(data.board, size, GetDifficultyPercentage(difficulty), randomState);
+        data.solution = GenerateSudokuBoard(size, randomState);
+        data.board = RemoveRandomValues(data.solution, size, GetDifficultyPercentage(difficulty), randomState);
         sudokuData.Add(data);
         return sudokuData;
     }
