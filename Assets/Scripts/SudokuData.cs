@@ -106,16 +106,12 @@ public class SudokuDataGenerator : MonoBehaviour
         List<int> board = new List<int>();
         List<HashSet<int>> visited = new List<HashSet<int>>();
 
-
         // Initialize collections
         for (var i = 0; i < len * len; i++)
         {
             board.Add(0);
             visited.Add(new HashSet<int>());
         }
-
-        // First stage: Generate full board
-
         // Set Random Initial States
         if (randomState == -1)
         {
@@ -126,8 +122,10 @@ public class SudokuDataGenerator : MonoBehaviour
         {
             Random.InitState(randomState);
         }
+
+        // First stage: Generate full board
         // Push initial state to stack and start backtracking
-        var nextStates = GenerateRandomStates(size, Random.Range(0, int.MaxValue));
+        var nextStates = GenerateRandomStates(size, randomState);
         foreach (var state in nextStates)
             stack.Push((0, state));
         // While stack is not empty, search for solution
@@ -157,7 +155,7 @@ public class SudokuDataGenerator : MonoBehaviour
             }
             // Get all adjacent vertices of current vertex
             // If an adjacent vertex is not visited, push it to stack
-            nextStates = GenerateRandomStates(size, Random.Range(0, int.MaxValue));
+            nextStates = GenerateRandomStates(size, randomState);
             foreach (var state in nextStates)
             {
                 if (!visited[idx + 1].Contains(state) && CheckPossible(board, size, idx + 1, state))
