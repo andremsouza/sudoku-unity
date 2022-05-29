@@ -167,8 +167,6 @@ public class SudokuDataGenerator : MonoBehaviour
             }
         }
 
-        // Second stage: remove random numbers from board while ensuring only one solution
-
         return board;
     }
 
