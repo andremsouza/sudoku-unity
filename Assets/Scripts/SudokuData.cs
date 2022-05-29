@@ -311,47 +311,6 @@ public class SudokuDataGenerator : MonoBehaviour
     }
 }
 
-public class SudokuEasyData : MonoBehaviour
-{
-    // public static List<SudokuData.SudokuBoardData> GetData()
-    // {
-    //     List<SudokuData.SudokuBoardData> data = new List<SudokuData.SudokuBoardData>();
-
-    //     data.Add(new SudokuData.SudokuBoardData(
-    //         new List<int>(81) {
-    //             0, 1, 4, 0, 0, 0, 0, 3, 0,
-    //             3, 0, 0, 5, 1, 0, 8, 0, 0,
-    //             0, 8, 0, 0, 0, 9, 0, 0, 6,
-    //             0, 0, 1, 8, 0, 0, 6, 0, 0,
-    //             0, 0, 3, 2, 5, 6, 4, 0, 0,
-    //             0, 0, 6, 0, 0, 7, 2, 0, 0,
-    //             9, 0, 0, 7, 0, 0, 0, 4, 0,
-    //             0, 0, 5, 0, 8, 4, 0, 0, 2,
-    //             0, 4, 0, 0, 0, 0, 7, 1, 0
-    //         },
-    //         new List<int>(81) {
-    //             0, 1, 4, 0, 0, 0, 0, 3, 0,
-    //             3, 0, 0, 5, 1, 0, 8, 0, 0,
-    //             0, 8, 0, 0, 0, 9, 0, 0, 6,
-    //             0, 0, 1, 8, 0, 0, 6, 0, 0,
-    //             0, 0, 3, 2, 5, 6, 4, 0, 0,
-    //             0, 0, 6, 0, 0, 7, 2, 0, 0,
-    //             9, 0, 0, 7, 0, 0, 0, 4, 0,
-    //             0, 0, 5, 0, 8, 4, 0, 0, 2,
-    //             0, 4, 0, 0, 0, 0, 7, 1, 0
-    //         }
-    //     ));
-
-    //     return data;
-    // }
-
-    public static List<SudokuData.SudokuBoardData> GetData(int size, string difficulty)
-    {
-        List<SudokuData.SudokuBoardData> data = SudokuDataGenerator.GenerateSudokuData(size, difficulty);
-        return data;
-    }
-}
-
 
 public class SudokuData : MonoBehaviour
 {
@@ -382,10 +341,10 @@ public class SudokuData : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        SudokuGame.Add("Easy", SudokuEasyData.GetData(3, "Easy"));
-        // SudokuGame.Add("Medium", SudokuMediumData.GetData());
-        // SudokuGame.Add("Hard", SudokuHardData.GetData());
-        // SudokuGame.Add("VeryHard", SudokuVeryHardData.GetData());
+        SudokuGame.Add("Easy", SudokuDataGenerator.GenerateSudokuData(3, "Easy"));
+        SudokuGame.Add("Medium", SudokuDataGenerator.GenerateSudokuData(3, "Medium"));
+        SudokuGame.Add("Hard", SudokuDataGenerator.GenerateSudokuData(3, "Hard"));
+        SudokuGame.Add("VeryHard", SudokuDataGenerator.GenerateSudokuData(3, "VeryHard"));
     }
 
     // Update is called once per frame
