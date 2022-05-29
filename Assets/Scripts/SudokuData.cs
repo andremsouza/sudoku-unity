@@ -15,6 +15,7 @@ public class SudokuDataGenerator : MonoBehaviour
         {"VeryHard", 0.21f}
     };
 
+
     private static bool CheckValid(in List<int> board, in int size)
     {
         var len = size * size;
