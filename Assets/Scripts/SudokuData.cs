@@ -6,8 +6,8 @@ using static System.Int32;
 
 public class SudokuDataGenerator : MonoBehaviour
 {
-
     private const float _easyPercentage = 0.16f, _mediumPercentage = 0.37f, _hardPercentage = 0.58f, _veryHardPercentage = 0.79f;
+
 
     private static bool CheckValidBoard(in List<int> board, in int size, in bool checkFull)
     {
