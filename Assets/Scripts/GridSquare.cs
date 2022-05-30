@@ -1,8 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 
 public class GridSquare : Selectable
@@ -14,7 +14,7 @@ public class GridSquare : Selectable
     {
         base.Start();
         if (NumberText.GetComponent<TextMeshProUGUI>() == null)
-            Debug.LogError("numberText must have a TextMeshProUGUI script attached to it");
+            Debug.LogError("NumberText must have a TextMeshProUGUI script attached to it");
     }
 
     // Update is called once per frame

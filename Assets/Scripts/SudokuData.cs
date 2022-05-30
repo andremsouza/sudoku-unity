@@ -6,13 +6,11 @@ using static System.Int32;
 
 public class SudokuDataGenerator : MonoBehaviour
 {
-    private const float _easyPercentage = 0.16f, _mediumPercentage = 0.37f, _hardPercentage = 0.58f, _veryHardPercentage = 0.79f;
+    private const float _easyPercentage = 0.25f, _mediumPercentage = 0.45f, _hardPercentage = 0.65f, _veryHardPercentage = 0.75f;
 
 
-    public static List<SudokuData.SudokuBoardData> GenerateSudokuData(in int size, in string difficulty, int randomState = -1)
+    public static SudokuData.SudokuBoardData GenerateSudokuData(in ushort size, in string difficulty, int randomState = -1)
     {
-        List<SudokuData.SudokuBoardData> sudokuData = new List<SudokuData.SudokuBoardData>();
-        SudokuData.SudokuBoardData data = new SudokuData.SudokuBoardData();
 
         if (randomState == -1)
         {
@@ -20,11 +18,11 @@ public class SudokuDataGenerator : MonoBehaviour
             randomState = (int)dateTime.TimeOfDay.TotalMilliseconds;
         }
         Random.InitState(randomState);
+        // SudokuData.SudokuBoardData data = new SudokuData.SudokuBoardData();
 
-        data.solution = GenerateSudokuBoard(size, randomState);
-        data.board = RemoveRandomValues(data.solution, size, GetDifficultyPercentage(difficulty), randomState);
-        sudokuData.Add(data);
-        return sudokuData;
+        var solution = GenerateSudokuBoard(size, randomState);
+        var board = RemoveRandomValues(solution, size, GetDifficultyPercentage(difficulty), randomState);
+        return new SudokuData.SudokuBoardData(board, solution);
     }
 
 
@@ -163,7 +161,7 @@ public class SudokuDataGenerator : MonoBehaviour
                 return _mediumPercentage;
             case "Hard":
                 return _hardPercentage;
-            case "Very Hard":
+            case "VeryHard":
                 return _veryHardPercentage;
             default:
                 return 0.0f;
@@ -173,7 +171,7 @@ public class SudokuDataGenerator : MonoBehaviour
 
     private static List<int> RemoveRandomValues(in List<int> solution, in int size, in float removePercentage, int randomState = -1)
     {
-        int len = size * size, removedValues = 0, removeCount = (int)(removePercentage * solution.Count), remainingAttempts = 1000;
+        int len = size * size, removedValues = 0, removeCount = (int)(removePercentage * solution.Count), remainingAttempts = solution.Count * solution.Count;
         List<int> board = new List<int>(solution);
         List<int> filledCells = new List<int>();
         HashSet<int> filledCellsSet = new HashSet<int>(), removedCells = new HashSet<int>();
@@ -330,6 +328,9 @@ public class SudokuData : MonoBehaviour
 
     public Dictionary<string, List<SudokuBoardData>> SudokuGame = new Dictionary<string, List<SudokuBoardData>>();
 
+    private string _difficulty;
+    private ushort _size;
+
     void Awake()
     {
         if (Instance == null)
@@ -341,15 +342,62 @@ public class SudokuData : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        SudokuGame.Add("Easy", SudokuDataGenerator.GenerateSudokuData(3, "Easy"));
-        SudokuGame.Add("Medium", SudokuDataGenerator.GenerateSudokuData(3, "Medium"));
-        SudokuGame.Add("Hard", SudokuDataGenerator.GenerateSudokuData(3, "Hard"));
-        SudokuGame.Add("VeryHard", SudokuDataGenerator.GenerateSudokuData(3, "VeryHard"));
+        _difficulty = "Easy";
+        _size = 3;
     }
 
     // Update is called once per frame
     void Update()
     {
 
+    }
+
+
+    public SudokuData.SudokuBoardData GenerateGame()
+    {
+        return SudokuDataGenerator.GenerateSudokuData(_size, _difficulty);
+    }
+
+
+    public string GetDifficulty()
+    {
+        return _difficulty;
+    }
+
+
+    public ushort GetSize()
+    {
+        return _size;
+    }
+
+
+    public void SetDifficulty(string difficulty)
+    {
+        switch (difficulty)
+        {
+            case "Easy":
+            case "Medium":
+            case "Hard":
+            case "VeryHard":
+                _difficulty = difficulty;
+                break;
+            default:
+                throw new System.ArgumentException("Invalid difficulty. Must be one of: Easy, Medium, Hard, VeryHard");
+        }
+        _difficulty = difficulty;
+    }
+
+
+    public void SetSize(ushort size)
+    {
+        switch (size)
+        {
+            case 0:
+            case >= 10:
+                throw new System.ArgumentOutOfRangeException("size", "Size must be between 1 and 9");
+            default:
+                _size = size;
+                break;
+        }
     }
 }

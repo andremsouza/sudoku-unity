@@ -17,8 +17,23 @@ public class MenuButtons : MonoBehaviour
 
     }
 
+
     public void LoadScene(string name)
     {
         SceneManager.LoadScene(name);
+    }
+
+
+    public void SetSize(System.Single size)
+    {
+        SudokuData.Instance.SetSize((ushort)size);
+        Debug.Log("[INFO] gameSize: " + size);
+    }
+
+
+    public void SetDifficulty(string difficulty)
+    {
+        SudokuData.Instance.SetDifficulty(difficulty);
+        Debug.Log("[INFO] gameDifficulty: " + difficulty);
     }
 }
