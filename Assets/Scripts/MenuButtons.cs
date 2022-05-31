@@ -26,14 +26,26 @@ public class MenuButtons : MonoBehaviour
 
     public void SetSize(System.Single size)
     {
-        SudokuData.Instance.SetSize((ushort)size);
+        GameSettings.Instance.SetGameSize((ushort)size);
         Debug.Log("[INFO] gameSize: " + size);
     }
 
 
     public void SetDifficulty(string difficulty)
     {
-        SudokuData.Instance.SetDifficulty(difficulty);
+        GameSettings.Instance.SetGameMode(difficulty);
         Debug.Log("[INFO] gameDifficulty: " + difficulty);
+    }
+
+
+    public void ActivateObject(GameObject obj)
+    {
+        obj.SetActive(true);
+    }
+
+
+    public void DeactivateObject(GameObject obj)
+    {
+        obj.SetActive(false);
     }
 }

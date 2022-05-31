@@ -8,7 +8,7 @@ using static System.Int32;
 
 public class SudokuDataGenerator : MonoBehaviour
 {
-    private const float _easyPercentage = 0.25f, _mediumPercentage = 0.45f, _hardPercentage = 0.65f, _veryHardPercentage = 0.75f;
+    private const float _easyPercentage = 0.16f, _mediumPercentage = 0.37f, _hardPercentage = 0.58f, _veryHardPercentage = 0.79f;
 
 
     private struct CheckFullValidBoardJob : IJobParallelFor
@@ -61,6 +61,62 @@ public class SudokuDataGenerator : MonoBehaviour
                         return;
                     }
             isValid[0] = 1;
+        }
+    }
+
+
+    private struct CheckPossibleNextStatesJob : IJobParallelFor
+    {
+        [ReadOnly] public NativeArray<int> board;
+        [ReadOnly] public NativeArray<int> currentEmptyCells;
+
+        [NativeDisableParallelForRestriction] public NativeArray<short> isValid;
+        public int size;
+
+        //Constructor
+        public CheckPossibleNextStatesJob(int size, NativeArray<short> isValid, NativeArray<int> board, NativeArray<int> currentEmptyCells)
+        {
+            this.size = size;
+            this.isValid = isValid;
+            this.board = board;
+            this.currentEmptyCells = currentEmptyCells;
+        }
+
+
+        public void Execute(int idx)
+        {
+            var len = size * size;
+            var stateIdx = currentEmptyCells[idx];
+            // var nextStates = new int[len];
+            for (int s = 0; s < len; s++)
+            {
+                var nextState = s + 1;
+                int row = stateIdx / len, col = stateIdx % len;
+                // Check row
+                for (int j = 0; j < len; j++)
+                    if (row * len + j != stateIdx && board[row * len + j] == nextState)
+                    {
+                        isValid[idx * len + s] = 0;
+                        continue;
+                    }
+                // Check column
+                for (int i = 0; i < len; i++)
+                    if (i * len + col != stateIdx && board[i * len + col] == nextState)
+                    {
+                        isValid[idx * len + s] = 0;
+                        continue;
+                    }
+                // Check square
+                for (int i = size * (int)(row / size); i < size * ((int)(row / size) + 1); i++)
+                    for (int j = size * (int)(col / size); j < size * ((int)(col / size) + 1); j++)
+                        if (i * len + j != stateIdx && board[i * len + j] == nextState)
+                        {
+                            isValid[idx * len + s] = 0;
+                            continue;
+                        }
+                if (isValid[idx * len + s] == -1)
+                    isValid[idx * len + s] = 1;
+            }
         }
     }
 
@@ -318,7 +374,7 @@ public class SudokuDataGenerator : MonoBehaviour
 
     private static List<int> RemoveRandomValues(in List<int> solution, in int size, in float removePercentage, int randomState = -1)
     {
-        int len = size * size, removedValues = 0, removeCount = (int)(removePercentage * solution.Count), remainingAttempts = solution.Count * solution.Count;
+        int len = size * size, removedValues = 0, removeCount = (int)(removePercentage * solution.Count), remainingAttempts = solution.Count;
         List<int> board = new List<int>(solution);
         List<int> filledCells = new List<int>();
         HashSet<int> filledCellsSet = new HashSet<int>(), removedCells = new HashSet<int>();
@@ -361,7 +417,7 @@ public class SudokuDataGenerator : MonoBehaviour
                     board[removeIdx] = tmpVal;
                     filledCells.Add(removeIdx);
                     filledCellsSet.Add(removeIdx);
-                    removedCells.Remove(removeIdx);
+                    // removedCells.Remove(removeIdx);
                 }
             }
         }
@@ -410,12 +466,12 @@ public class SudokuDataGenerator : MonoBehaviour
         }
 
         // HashSet<JobHandle> jobs = new HashSet<JobHandle>();
-        NativeArray<int> sharedBoard = new NativeArray<int>(board.ToArray(), Allocator.TempJob);
         // While stack is not empty, search for solution
         while (stack.Count > 0)
         {
             // Get top of stack and check if visited
             var (currentState, currentEmptyCells) = stack.Pop();
+            NativeArray<int> sharedCurrentState = new NativeArray<int>(currentState.ToArray(), Allocator.TempJob);
             if (!visited.Contains(string.Concat(currentState.ToArray())))
             {
                 // If not visited, mark as visited and "make a move"
@@ -425,10 +481,11 @@ public class SudokuDataGenerator : MonoBehaviour
                 if (currentEmptyCells.Count == 0)
                 {
                     // Start of paralell section
-                    NativeArray<short> isValid = new NativeArray<short>(new short[] { -1 }, Allocator.TempJob);
-                    var job = new CheckFullValidBoardJob(size, isValid, sharedBoard);
-                    var jobHandle = job.Schedule(sharedBoard.Length, size * size);
-                    jobHandle.Complete();
+                    NativeArray<short> isValid = new NativeArray<short>(1, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+                    isValid[0] = -1;
+                    var nextStatesjob = new CheckFullValidBoardJob(size, isValid, sharedCurrentState);
+                    var nextStatesjobHandle = nextStatesjob.Schedule(sharedCurrentState.Length, size * size);
+                    nextStatesjobHandle.Complete();
                     if (isValid[0] == 1)
                     {
                         solutionCount++;
@@ -446,13 +503,24 @@ public class SudokuDataGenerator : MonoBehaviour
 
             // Get all adjacent vertices of current vertex
             // If an adjacent vertex is not visited, push it to stack
-            foreach (var idx in currentEmptyCells)
+            // Start of parallel section
+            if (currentEmptyCells.Count > 0)
             {
-                var nextStates = GenerateRandomStates(size, Random.Range(0, int.MaxValue));
-                foreach (var state in nextStates)
+                int[] currentEmptyCellsArray = new int[currentEmptyCells.Count];
+                currentEmptyCells.CopyTo(currentEmptyCellsArray);
+                NativeArray<int> sharedCurrentEmptyCells = new NativeArray<int>(currentEmptyCellsArray, Allocator.TempJob);
+                NativeArray<short> isValidState = new NativeArray<short>(currentEmptyCells.Count * len, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+                for (int i = 0; i < currentEmptyCells.Count * len; i++)
+                    isValidState[i] = -1;
+                var job = new CheckPossibleNextStatesJob(size, isValidState, sharedCurrentState, sharedCurrentEmptyCells);
+                var jobHandle = job.Schedule(sharedCurrentEmptyCells.Length, 1);
+                jobHandle.Complete();
+                for (int i = 0; i < currentEmptyCells.Count * len; i++)
                 {
-                    if (CheckPossible(currentState, size, idx, state))
+                    if (isValidState[i] == 1)
                     {
+                        int idx = sharedCurrentEmptyCells[i / len];
+                        int state = i % len + 1;
                         var tmpBoard = new List<int>(currentState);
                         var tmpEmptyCells = new HashSet<int>(currentEmptyCells);
                         tmpBoard[idx] = state;
@@ -461,9 +529,12 @@ public class SudokuDataGenerator : MonoBehaviour
                             stack.Push((tmpBoard, tmpEmptyCells));
                     }
                 }
+                sharedCurrentEmptyCells.Dispose();
+                isValidState.Dispose();
             }
+            sharedCurrentState.Dispose();
+            // End of parallel section
         }
-        sharedBoard.Dispose();
 
         return solutionCount;
     }
@@ -486,10 +557,6 @@ public class SudokuData : MonoBehaviour
         }
     };
 
-    public Dictionary<string, List<SudokuBoardData>> SudokuGame = new Dictionary<string, List<SudokuBoardData>>();
-
-    private string _difficulty;
-    private ushort _size;
 
     void Awake()
     {
@@ -502,8 +569,7 @@ public class SudokuData : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        _difficulty = "Easy";
-        _size = 3;
+
     }
 
     // Update is called once per frame
@@ -515,44 +581,6 @@ public class SudokuData : MonoBehaviour
 
     public SudokuData.SudokuBoardData GenerateGame()
     {
-        return SudokuDataGenerator.GenerateSudokuData(_size, _difficulty);
-    }
-
-
-    public string GetDifficulty()
-    {
-        return _difficulty;
-    }
-
-
-    public ushort GetSize()
-    {
-        return _size;
-    }
-
-
-    public void SetDifficulty(string difficulty)
-    {
-        switch (difficulty)
-        {
-            case "Easy":
-            case "Medium":
-            case "Hard":
-            case "VeryHard":
-                _difficulty = difficulty;
-                break;
-            default:
-                throw new System.ArgumentException("Invalid difficulty. Must be one of: Easy, Medium, Hard, VeryHard");
-        }
-        _difficulty = difficulty;
-    }
-
-
-    public void SetSize(ushort size)
-    {
-        if (size < 1 || size > 9)
-
-            throw new System.ArgumentOutOfRangeException("size", "Size must be between 1 and 9");
-        _size = size;
+        return SudokuDataGenerator.GenerateSudokuData(GameSettings.Instance.GetGameSize(), GameSettings.Instance.GetGameMode());
     }
 }

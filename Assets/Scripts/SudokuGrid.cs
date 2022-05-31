@@ -19,7 +19,7 @@ public class SudokuGrid : MonoBehaviour
     {
         if (GridSquare.GetComponent<GridSquare>() == null)
             Debug.LogError("gridSquare must have a GridSquare script attached to it");
-        GridSize = SudokuData.Instance.GetSize();
+        GridSize = GameSettings.Instance.GetGameSize();
         _columns = _rows = (ushort)(GridSize * GridSize);
         CreateGrid();
         SetGridNumbers();
