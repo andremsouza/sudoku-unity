@@ -48,4 +48,11 @@ public class MenuButtons : MonoBehaviour
     {
         obj.SetActive(false);
     }
+
+
+    public void QuitGame()
+    {
+        Debug.Log("[INFO] Quit Game");
+        Application.Quit();
+    }
 }

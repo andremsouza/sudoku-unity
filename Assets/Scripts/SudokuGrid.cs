@@ -39,11 +39,13 @@ public class SudokuGrid : MonoBehaviour
 
     private void SpawnGridSquares()
     {
+        int squareIndex = 0;
         for (var i = 0; i < _columns; i++)
         {
             for (var j = 0; j < _rows; j++)
             {
                 _gridSquares.Add(Instantiate(GridSquare) as GameObject);
+                _gridSquares[_gridSquares.Count - 1].GetComponent<GridSquare>().SetSquareIndex(squareIndex++);
                 _gridSquares[_gridSquares.Count - 1].transform.SetParent(this.transform); // instantiate this game object as a child of the grid
                 _gridSquares[_gridSquares.Count - 1].transform.localScale = new Vector3(SquareScale, SquareScale, SquareScale);
             }
@@ -85,6 +87,42 @@ public class SudokuGrid : MonoBehaviour
         for (var i = 0; i < _gridSquares.Count; i++)
         {
             _gridSquares[i].GetComponent<GridSquare>().SetNumber(data.board[i]);
+            _gridSquares[i].GetComponent<GridSquare>().SetCorrectNumber(data.solution[i]);
+            _gridSquares[i].GetComponent<GridSquare>().SetHasDefaultValue(data.board[i] != 0 && data.board[i] == data.solution[i]);
         }
+    }
+
+
+    private void OnEnable()
+    {
+        GameEvents.OnUpdateSquareNumber += CheckBoardCompleted;
+    }
+
+    private void OnDisable()
+    {
+        GameEvents.OnUpdateSquareNumber -= CheckBoardCompleted;
+    }
+
+
+    private void CheckBoardCompleted(int number)
+    {
+        foreach (var square in _gridSquares)
+        {
+            if (square.GetComponent<GridSquare>().IsCorrectNumberSet() == false)
+                return;
+        }
+        GameEvents.OnBoardCompletedMethod();
+        GameEvents.OnGameOverMethod();
+    }
+
+
+    public void SolveSudoku()
+    {
+        foreach (var square in _gridSquares)
+        {
+            square.GetComponent<GridSquare>().SetCorrectNumber();
+        }
+
+        CheckBoardCompleted(0);
     }
 }

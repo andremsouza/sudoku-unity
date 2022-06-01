@@ -85,7 +85,7 @@ public class GameSettings : MonoBehaviour
                 return "VeryHard";
         }
 
-        Debug.LogError("[Error] Game difficulty is not set.");
+        Debug.LogError("[ERROR] Game difficulty is not set.");
         return " ";
     }
 
@@ -94,7 +94,7 @@ public class GameSettings : MonoBehaviour
     {
         if (size < 1 || size > 9)
         {
-            Debug.LogError("[Error] Game size is invalid. Must be between 1 and 9.");
+            Debug.LogError("[ERROR] Game size is invalid. Must be between 1 and 9.");
             throw new System.ArgumentOutOfRangeException("size", "Size must be between 1 and 9");
         }
         _gameSize = size;
